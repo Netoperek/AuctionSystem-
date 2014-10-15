@@ -9,21 +9,17 @@ import akka.actor.Props
 
 class BuyerActor extends Actor {
   
-  private final val BID = " bidding with price "
-  private final val BUYER = "Buyer#"
-  private final val AUCTION = " Auction#"
-  private final val STOPPED = " stopped bidding "
-  
-  private val BOTTOM_PRICE : Int = 10
-  private val TOP_PRICE : Int = 100
-  private val BOTTOM_BID : Int = 10
-  private val TOP_BID : Int = 30
-  
+  private val BID = " bidding with price "
+  private val BUYER = "Buyer#"
+  private val AUCTION = " Auction#"
+  private val STOPPED = " stopped bidding "
+  private val I_WON = " I won auction "
+  private val COOL = " - thats cool !"
+
   private val random = new scala.util.Random
   
   private var buyerId = -1
   private var auctions : List[ActorRef] = Nil
-  private var keepBidding = false
   
   private def setBuyerId(buyerId: Integer) {
     this.buyerId = buyerId
@@ -34,12 +30,12 @@ class BuyerActor extends Actor {
   }
   
   private def numberOfBids() : Int = {
-    val range = BOTTOM_BID to TOP_BID
+    val range = SystemSettings.BUYER_BOTTOM_NUMBER_OF_BIDS to SystemSettings.BUYER_TOP_NUMBER_OF_BIDS
     return range(random.nextInt(range length))   
   }
 
   private def randomPrice() : Int = {
-    val range = BOTTOM_PRICE to TOP_PRICE
+    val range = SystemSettings.BUYER_BOTTOM_PRICE to SystemSettings.BUYER_TOP_PRICE
     return range(random.nextInt(range length))
   }
 
@@ -49,13 +45,12 @@ class BuyerActor extends Actor {
   }
   
   private def bidRandomAuction() = {
-    for( i <- 1 to numberOfBids() ){
+    for( i <- 1 to numberOfBids() ) {
 	    val auctionId = randomAuction(0, auctions.length)
 	    val price = randomPrice()
 	    val auction = auctions(auctionId)
-	    //AuctionSystemLogger.log(BUYER + buyerId + BID + price + AUCTION + auctionId)
 	    auctions(auctionId) ! bid(price, buyerId)
-	    Thread sleep 1000
+	    Thread sleep SystemSettings.BUYER_BID_FREQUENCY
     }
   }
 
@@ -67,6 +62,9 @@ class BuyerActor extends Actor {
     }
     case stopBidding(auction: ActorRef) => {
       auctions = auctions.diff(List(auction))
+    }
+    case youWon(auctionId: Int) => {
+      AuctionSystemLogger.log(BUYER + buyerId, I_WON + auctionId + COOL)
     }
   }
 

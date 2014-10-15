@@ -22,12 +22,7 @@ class AuctionManager extends Actor with FSM[State, Data]{
   private val AUCTIONS : String = " auctions "
   private val BUYERS : String = " buyers "
   private val AUCTION_SYSTEM : String = "Auction System"
-    
-  private val BOTTOM_TIME : Int = 10
-  private val TOP_TIME : Int = 15
-  private val BOTTOM_PRICE : Int = 10
-  private val TOP_PRICE : Int = 100
-    
+
   private val random = new scala.util.Random
     
   private def initAuctions(numberOfAuctions: Int) : List[ActorRef] = {
@@ -39,12 +34,12 @@ class AuctionManager extends Actor with FSM[State, Data]{
   }
   
   private def randomTime() : Int = {
-    val range = BOTTOM_TIME to TOP_TIME
+    val range = SystemSettings.TIMERS_BOTTOM_TIME to SystemSettings.TIMERS_TOP_TIME
     return range(random.nextInt(range length))
   }
   
   private def randomPrice() : Int = {
-    val range = BOTTOM_PRICE to TOP_PRICE
+    val range = SystemSettings.AUCTION_BOTTOM_PRICE to SystemSettings.AUCTION_TOP_PRICE
     return range(random.nextInt(range length))
   }
  
@@ -70,12 +65,23 @@ class AuctionManager extends Actor with FSM[State, Data]{
   }
 
   when(AuctionSystemOn) {
+
     case Event(startAuctionSystem(numberOfAuctions, numberOfBuyers), 
     			AuctionSystemData(auctionsList, buyersList)) => {
       AuctionSystemLogger.log(AUCTION_SYSTEM, SYSTEM_RUNNING)
       stay using AuctionSystemData(auctionsList, buyersList)
     }
-    case Event(closeAuctionSystem, _) => {
+    case Event(notifyWinner(auctionId, buyerId), AuctionSystemData(auctionsList, buyersList)) => {
+      buyersList(buyerId) ! youWon(auctionId)
+      stay using AuctionSystemData(auctionsList, buyersList) 
+    }
+    case Event(auctionIsOver, AuctionSystemData(auctionsList, buyersList)) => {
+      buyersList.foreach {
+        x => x ! stopBidding(sender)
+      }
+      stay using AuctionSystemData(auctionsList, buyersList) 
+    }
+    case Event(closeAuctionSystem, AuctionSystemData(_, _)) => {
       AuctionSystemLogger.log(AUCTION_SYSTEM, SYSTEM_CLOSED)
       goto(AuctionSystemOff) using AuctionSystemData(Nil, Nil) 
     }
