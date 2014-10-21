@@ -11,5 +11,5 @@ object SystemSettings {
   val AUCTION_TOP_PRICE : Int = 100
   val NUMBER_OF_AUCTIONS = 3;
   val NUMBER_OF_BUYERS = 3;
-  val BUYER_BID_FREQUENCY = 500; // ms
+  val BUYER_BID_FREQUENCY = 1000; // ms
 }

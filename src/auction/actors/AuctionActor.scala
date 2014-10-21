@@ -57,28 +57,8 @@ class AuctionActor extends Actor with FSM[state, data] {
         AuctionSystemLogger.log(AUCTION  + auctionId ,DELETE_TIMER_EXPIRED + AUCTION_IS_OVER)
       } 
     })
-  }
-  
-  private def setAuctionId(auctionId: Int) {
-    this.auctionId = auctionId
-  }
-  
-  private def setPrice(price: Int) {
-    this.price = price
-  }
-  
-  private def setBidTimer(bidTimer : Int) {
-    this.bidTimer = bidTimer
-  }
-  
-  private def setDeleteTimer(deleteTimer : Int) {
-    this.deleteTimer = deleteTimer
-  }
-  
-  def getPrice() : Int = {
-    return price;
-  }
-  
+  }  
+
 
   
   /*
@@ -89,10 +69,10 @@ class AuctionActor extends Actor with FSM[state, data] {
   
   when(AuctionOff) {
     case Event(createAuction(bidTimer, deleteTimer, price, auctionId), Uninitialized) => {
-    	setDeleteTimer(deleteTimer)
-    	setBidTimer(bidTimer)
-    	setAuctionId(auctionId)
-    	setPrice(price)
+    	this.deleteTimer = deleteTimer
+    	this.bidTimer = bidTimer
+    	this.price = price
+    	this.auctionId = auctionId
     	AuctionSystemLogger.log(AUCTION  + auctionId, CREATED_WITH_TIME + bidTimer + DELETE_TIME + deleteTimer + AND_PRICE + price)
     	goto(AuctionCreated) using AuctionData(NO_BEST_BID, NO_BUYER_ID)
     }

@@ -19,3 +19,5 @@ case class auctionIsOver() extends AuctionMessage
 
 case class bidTimerExpired() extends TimerMessage
 case class deleteTimerExpired() extends TimerMessage
+
+case class keepBidding(times: Int)

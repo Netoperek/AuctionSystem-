@@ -21,14 +21,6 @@ class BuyerActor extends Actor {
   private var buyerId = -1
   private var auctions : List[ActorRef] = Nil
   
-  private def setBuyerId(buyerId: Integer) {
-    this.buyerId = buyerId
-  }
-  
-  private def setAuctions(auctions: List[ActorRef]){
-    this.auctions = auctions
-  }
-  
   private def numberOfBids() : Int = {
     val range = SystemSettings.BUYER_BOTTOM_NUMBER_OF_BIDS to SystemSettings.BUYER_TOP_NUMBER_OF_BIDS
     return range(random.nextInt(range length))   
@@ -45,19 +37,13 @@ class BuyerActor extends Actor {
   }
   
   private def bidRandomAuction() = {
-    for( i <- 1 to numberOfBids() ) {
-	    val auctionId = randomAuction(0, auctions.length)
-	    val price = randomPrice()
-	    val auction = auctions(auctionId)
-	    auctions(auctionId) ! bid(price, buyerId)
-	    Thread sleep SystemSettings.BUYER_BID_FREQUENCY
-    }
+    self ! keepBidding(numberOfBids())
   }
 
   def receive = {
     case startBidding(auctions: List[ActorRef], buyerId: Integer) => {
-      setBuyerId(buyerId)
-      setAuctions(auctions)
+      this.buyerId = buyerId
+      this.auctions = auctions
       bidRandomAuction()
     }
     case stopBidding(auction: ActorRef) => {
@@ -65,6 +51,17 @@ class BuyerActor extends Actor {
     }
     case youWon(auctionId: Int) => {
       AuctionSystemLogger.log(BUYER + buyerId, I_WON + auctionId + COOL)
+    }
+    case keepBidding(times :Int) => {
+    	if ( auctions.length != 0) {
+	    	Thread sleep SystemSettings.BUYER_BID_FREQUENCY
+		    val auctionId = randomAuction(0, auctions.length)
+			val price = randomPrice()
+			val auction = auctions(auctionId)
+			auctions(auctionId) ! bid(price, buyerId)
+			AuctionSystemLogger.log(BUYER + buyerId, "bidding auction " + auctionId + " with " + price)
+			if (times > 0) self ! keepBidding(times.-(1))
+    	}
     }
   }
 
