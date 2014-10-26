@@ -76,8 +76,8 @@ class AuctionActor extends Actor with FSM[state, data] {
     	AuctionSystemLogger.log(AUCTION  + auctionId, CREATED_WITH_TIME + bidTimer + DELETE_TIME + deleteTimer + AND_PRICE + price)
     	goto(AuctionCreated) using AuctionData(NO_BEST_BID, NO_BUYER_ID)
     }
-    case Event(bid(bidPrice, bidBuyerId), AuctionData(_, _)) => {
-    	stay using AuctionData(NO_BEST_BID, NO_BUYER_ID)
+    case Event(bid(bidPrice, bidBuyerId), Uninitialized) => {
+    	stay using Uninitialized
     }
   }
   
@@ -126,12 +126,7 @@ class AuctionActor extends Actor with FSM[state, data] {
     }
   }
   
-  whenUnhandled {
-    case Event(e, s) => {
-      AuctionSystemLogger.log(AUCTION + auctionId, UNHANDLED_MSG)
-      stay
-    }
-  }
+
   
   onTransition {
     case AuctionOff -> AuctionCreated => {
