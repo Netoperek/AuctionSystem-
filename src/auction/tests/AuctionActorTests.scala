@@ -28,6 +28,10 @@ import auction.helpers.deleteTimerExpired
 class AuctionActorTests extends TestKit(ActorSystem("AuctionSpec"))
   with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
   
+  private val NO_BEST_BID : Int = -1
+  private val NO_BUYER_ID : Int = -1
+  private val TITLE : String = " some title "
+  
   override def afterAll(): Unit = {
     system.shutdown()
   }
@@ -57,9 +61,9 @@ class AuctionActorTests extends TestKit(ActorSystem("AuctionSpec"))
         "Have CreatedAuction state" in {
 	        assert(fsm.stateName == AuctionOff)
 		    assert(fsm.stateData == Uninitialized)
-		    fsm ! createAuction(100, 100, 100, 1)
+		    fsm ! createAuction(100, 100, 100, 1, "some title")
 		    assert(fsm.stateName == AuctionCreated)
-		    assert(fsm.stateData == AuctionData(-1, -1))
+		    assert(fsm.stateData == AuctionData(NO_BEST_BID, NO_BUYER_ID))
         }
       }
     }
@@ -68,7 +72,7 @@ class AuctionActorTests extends TestKit(ActorSystem("AuctionSpec"))
       "Receives bid message" when {
         "Price is bigger than start price" must {
           "Have ActivatedAuction state with best Price and buyerId" in {
-            fsm ! createAuction(100, 100, 100, 1)
+            fsm ! createAuction(100, 100, 100, 1, TITLE)
             val price = 1000;
             val buyerId = 3;
             fsm ! bid(price, buyerId)
@@ -78,21 +82,21 @@ class AuctionActorTests extends TestKit(ActorSystem("AuctionSpec"))
         }
         "Price is lower than start price" must {
           "Have AutctionCreated state with no best bid and no buyerId" in {
-            fsm ! createAuction(100, 100, 100, 1)
+            fsm ! createAuction(100, 100, 100, 1, TITLE)
             val price = 10;
             val buyerId = 10;
             fsm ! bid(price, buyerId)
             assert(fsm.stateName == AuctionCreated)
-            assert(fsm.stateData == AuctionData(-1,-1))
+            assert(fsm.stateData == AuctionData(NO_BEST_BID, NO_BUYER_ID))
           }
         }
       }
       "Receives bidTimerExpired message" must {
         "Have AuctionIgored state and no best bid and no buyer id" in {
-          fsm ! createAuction(100, 100, 100, 1)
+          fsm ! createAuction(100, 100, 100, 1, TITLE)
           fsm ! bidTimerExpired
           assert(fsm.stateName == AuctionIgnored)
-          assert(fsm.stateData == AuctionData(-1,-1))
+          assert(fsm.stateData == AuctionData(NO_BEST_BID, NO_BUYER_ID))
         }
       }
     }
@@ -101,7 +105,7 @@ class AuctionActorTests extends TestKit(ActorSystem("AuctionSpec"))
     	"Receives bid message" when {
     	  "Price is bigger than current best price" must {
     	    "Have AuctionAvtivated state and data with better price and buyer id" in {
-    	      fsm ! createAuction(100, 100, 100, 1)
+    	      fsm ! createAuction(100, 100, 100, 1, TITLE)
     	      fsm ! bid(1000, 11)
     	      fsm ! bid(1001, 12)
     	      assert(fsm.stateName == AuctionActivated)
@@ -110,7 +114,7 @@ class AuctionActorTests extends TestKit(ActorSystem("AuctionSpec"))
     	  }
     	  "Price is lower than current best price" must {
     	    "Have AuctionActivated state and data with same price and same buyer id" in {
-    	      fsm ! createAuction(100, 100, 100, 1)
+    	      fsm ! createAuction(100, 100, 100, 1, TITLE)
     	      fsm ! bid(1000, 11)
     	      fsm ! bid(999, 9)
     	      assert(fsm.stateName == AuctionActivated)
@@ -120,7 +124,7 @@ class AuctionActorTests extends TestKit(ActorSystem("AuctionSpec"))
     	}
     	"Receives bidTimerExpired message" must {
     	  "Have AuctionSold state and best price and buyer id" in {
-    		  fsm ! createAuction(100, 100, 100, 1)
+    		  fsm ! createAuction(100, 100, 100, 1, TITLE)
     	      fsm ! bid(1000, 11)
     	      fsm ! bid(1001, 12)
     	      fsm ! bidTimerExpired()

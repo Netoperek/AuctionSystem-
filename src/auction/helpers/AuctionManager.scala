@@ -1,113 +1,133 @@
 package auction.helpers
 
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.FSM
 import akka.actor.Props
 import akka.actor.actorRef2Scala
-import akka.actor.Actor
-import akka.actor.FSM
-import akka.actor.ActorRef
 import auction.actors.AuctionActor
-import akka.dispatch.Foreach
+import auction.actors.AuctionSearchActor
 import auction.actors.BuyerActor
+import auction.actors.SellerActor
 
-class AuctionManager extends Actor with FSM[State, Data]{
-  
-  private val SYSTEM_NOT_STARTED : String = "System is not started yet"
-  private val SYSTEM_STARTED : String = "System started"
-  private val AUCTIONS_CREATED : String = "Auctions created"
-  private val SYSTEM_CLOSED : String = "System closed"
-  private val SYSTEM_RUNNING : String = "System is already running"
-  private val UNHANDLED_MSG : String = "Error - unhandled message"
-  private val WITH : String = " with "
-  private val AND : String = "and "
-  private val AUCTIONS : String = " auctions "
-  private val BUYERS : String = " buyers "
-  private val AUCTION_SYSTEM : String = "Auction System"
+class AuctionManager extends Actor with FSM[State, Data] {
+
+  private val SYSTEM_NOT_STARTED: String = "System is not started yet"
+  private val SYSTEM_STARTED: String = "System started"
+  private val AUCTIONS_CREATED: String = "Auctions created"
+  private val SYSTEM_CLOSED: String = "System closed"
+  private val SYSTEM_RUNNING: String = "System is already running"
+  private val WITH: String = " with "
+  private val AND: String = "and "
+  private val AUCTIONS: String = " auctions "
+  private val BUYERS: String = " buyers "
+  private val SELLERS: String = " sellers "
+  private val AUCTION_SYSTEM: String = "Auction System"
+  private val AUCTIONS_REGISTERED: String = " Auctions Registered, buyers can start bidding "
+  private val NUMBER_OF_AUCTIONS_REGISTERED: String = " Number of auctions registered "
 
   private val random = new scala.util.Random
-    
-  private def initAuctions(numberOfAuctions: Int) : List[ActorRef] = {
-	return (1 to numberOfAuctions).map(num => context.actorOf(Props[AuctionActor], "auction" + num)).toList
+  private var auctionsRegistered = 1
+  private var auctionsFinished = 0
+
+  val auctionSearch = context.actorOf(Props[AuctionSearchActor], "auctionSearch")
+
+  private def initAuctions(numberOfAuctions: Int): List[ActorRef] = {
+    return (1 to numberOfAuctions).map(num => context.actorOf(Props[AuctionActor], "auction" + num)).toList
   }
-  
-  private def initBuyers(numberOfBuyers: Int) : List[ActorRef] = {
-	return (1 to numberOfBuyers).map(num => context.actorOf(Props[BuyerActor], "buyer" + num)).toList
+
+  private def initBuyers(numberOfBuyers: Int): List[ActorRef] = {
+    return (1 to numberOfBuyers).map(num => context.actorOf(Props[BuyerActor], "buyer" + num)).toList
   }
-  
-  private def randomTime() : Int = {
+
+  private def initSellers(numberOfSellers: Int): List[ActorRef] = {
+    return (1 to numberOfSellers).map(num => context.actorOf(Props[SellerActor], "seller" + num)).toList
+  }
+
+  private def randomTime(): Int = {
     val range = SystemSettings.TIMERS_BOTTOM_TIME to SystemSettings.TIMERS_TOP_TIME
     return range(random.nextInt(range length))
   }
-  
-  private def randomPrice() : Int = {
+
+  private def randomPrice(): Int = {
     val range = SystemSettings.AUCTION_BOTTOM_PRICE to SystemSettings.AUCTION_TOP_PRICE
     return range(random.nextInt(range length))
   }
- 
-
 
   /*
   * FSM 
-  */ 
+  */
 
   startWith(AuctionSystemOff, Uninitialized)
-  
+
   when(AuctionSystemOff) {
-    case Event(startAuctionSystem(numberOfAuctions, numberOfBuyers), Uninitialized) => {
-    	val auctionsList = initAuctions(numberOfAuctions)
-    	val buyersList = initBuyers(numberOfBuyers)
-    	AuctionSystemLogger.log(AUCTION_SYSTEM, SYSTEM_STARTED + WITH + numberOfAuctions + AUCTIONS + AND + numberOfBuyers + BUYERS)
-    	goto(AuctionSystemOn) using AuctionSystemData(auctionsList, buyersList) 
+    case Event(startAuctionSystem(), Uninitialized) => {
+      val auctionsList = initAuctions(SystemSettings.NUMBER_OF_AUCTIONS)
+      val buyersList = initBuyers(SystemSettings.NUMBER_OF_BUYERS)
+      val sellersList = initSellers(SystemSettings.NUMBER_OF_SELLERS)
+      AuctionSystemLogger.log(AUCTION_SYSTEM, SYSTEM_STARTED +
+        WITH +
+        SystemSettings.NUMBER_OF_AUCTIONS +
+        AUCTIONS +
+        AND +
+        SystemSettings.NUMBER_OF_BUYERS +
+        BUYERS +
+        SystemSettings.NUMBER_OF_SELLERS +
+        SELLERS)
+      goto(AuctionSystemOn) using AuctionSystemData(auctionsList, buyersList, sellersList)
     }
     case Event(closeAuctionSystem, Uninitialized) => {
       AuctionSystemLogger.log(AUCTION_SYSTEM, SYSTEM_NOT_STARTED)
-      stay using AuctionSystemData(Nil, Nil)
+      stay using AuctionSystemData(Nil, Nil, Nil)
     }
   }
 
   when(AuctionSystemOn) {
-
-    case Event(startAuctionSystem(numberOfAuctions, numberOfBuyers), 
-    			AuctionSystemData(auctionsList, buyersList)) => {
+    case Event(startAuctionSystem(),
+      AuctionSystemData(auctionsList, buyersList, sellersList)) => {
       AuctionSystemLogger.log(AUCTION_SYSTEM, SYSTEM_RUNNING)
-      stay using AuctionSystemData(auctionsList, buyersList)
+      stay using AuctionSystemData(auctionsList, buyersList, sellersList)
     }
-    case Event(notifyWinner(auctionId, buyerId), AuctionSystemData(auctionsList, buyersList)) => {
+    case Event(notifyWinner(auctionId, buyerId), AuctionSystemData(auctionsList, buyersList, sellersList)) => {
       buyersList(buyerId) ! youWon(auctionId)
-      stay using AuctionSystemData(auctionsList, buyersList) 
+      stay using AuctionSystemData(auctionsList, buyersList, sellersList)
     }
-    case Event(auctionIsOver, AuctionSystemData(auctionsList, buyersList)) => {
+    case Event(auctionRegistered(), AuctionSystemData(auctionsList, buyersList, sellersList)) => {
+      AuctionSystemLogger.log(AUCTION_SYSTEM, NUMBER_OF_AUCTIONS_REGISTERED + auctionsRegistered)
+      if (auctionsRegistered == SystemSettings.NUMBER_OF_AUCTIONS) {
+        AuctionSystemLogger.log(AUCTION_SYSTEM, AUCTIONS_REGISTERED)
+        buyersList.zipWithIndex foreach {
+          case (buyer, buyerId) => buyer ! startBidding(auctionsList, buyerId)
+        }
+      } else {
+        auctionsRegistered += 1
+      }
+
+      stay using AuctionSystemData(auctionsList, buyersList, sellersList)
+    }
+    case Event(auctionIsOver(), AuctionSystemData(auctionsList, buyersList, sellersList)) => {
+      auctionsFinished += 1
+      if(auctionsFinished == SystemSettings.NUMBER_OF_AUCTIONS){
+        AuctionSystemLogger.logResults()
+      }
       buyersList.foreach {
         x => x ! stopBidding(sender)
       }
-      stay using AuctionSystemData(auctionsList, buyersList) 
+      stay using AuctionSystemData(auctionsList, buyersList, sellersList)
     }
-    case Event(closeAuctionSystem, AuctionSystemData(_, _)) => {
+    case Event(closeAuctionSystem(), AuctionSystemData(_, _, _)) => {
       AuctionSystemLogger.log(AUCTION_SYSTEM, SYSTEM_CLOSED)
-      goto(AuctionSystemOff) using AuctionSystemData(Nil, Nil) 
-    }
-  }
-
-  whenUnhandled {
-    case Event(e, s) => {
-      AuctionSystemLogger.log(AUCTION_SYSTEM, UNHANDLED_MSG)
-      stay
+      goto(AuctionSystemOff) using AuctionSystemData(Nil, Nil, Nil)
     }
   }
 
   onTransition {
     case AuctionSystemOff -> AuctionSystemOn => {
-      for((Uninitialized, AuctionSystemData(auctions, buyers)) <- Some(stateData, nextStateData)) {
-
-        auctions.zipWithIndex foreach { 
-          case(auction, auctionId) => auction ! createAuction(randomTime(), randomTime(), randomPrice(), auctionId) 
+      for ((Uninitialized, AuctionSystemData(auctions, buyers, sellers)) <- Some(stateData, nextStateData)) {
+        sellers.zipWithIndex foreach {
+          case (seller, sellerId) => seller ! exhibitAuctions(auctions, sellerId)
         }
-        
-        buyers.zipWithIndex foreach { 
-          case(buyer, buyerId) => buyer ! startBidding(auctions, buyerId) 
-        }
-        
       }
-      	
     }
   }
 
@@ -119,4 +139,4 @@ case object AuctionSystemOff extends State
 
 sealed trait Data
 case object Uninitialized extends Data
-case class AuctionSystemData(auctions: List[ActorRef], buyers: List[ActorRef]) extends Data
+case class AuctionSystemData(auctions: List[ActorRef], buyers: List[ActorRef], sellers: List[ActorRef]) extends Data
