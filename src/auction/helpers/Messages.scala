@@ -25,7 +25,7 @@ case class deleteTimerExpired() extends TimerMessage
 
 case class keepBidding(times: Int)
 
-case class exhibitAuctions(auctions: List[ActorRef], sellerId: Int) extends SellerMessage
+case class exhibitAuctions(auctions: Map[ActorRef, String], sellerId: Int, from: Int) extends SellerMessage
 case class findAuction(keyWord: String) extends SearchMessage
 case class sendFoundAuctions(auctions: List[ActorRef]) extends SearchMessage
 case class registerAuction(auctionId: Integer, auction: ActorRef) extends SearchMessage

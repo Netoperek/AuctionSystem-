@@ -13,7 +13,7 @@ class SellerActor extends Actor {
   private var sellerId = -1;
 
   private val SELLER: String = "Seller#"
-  private val EXHIBIT: String = " exhibiting auctions "
+  private val EXHIBIT: String = " exhibiting auctions in number of "
 
   private val random = new scala.util.Random
 
@@ -28,13 +28,13 @@ class SellerActor extends Actor {
   }
 
   def receive = {
-    case exhibitAuctions(auctions, sellerId) => {
+    case exhibitAuctions(auctions, sellerId, from) => {
       this.sellerId = sellerId
-      AuctionSystemLogger.log(SELLER + sellerId, EXHIBIT)
-      auctions.zipWithIndex foreach {
-        case (auction, auctionId) => {
-          auction ! createAuction(randomTime(), randomTime(), randomPrice(), auctionId, SystemSettings.TITLES(auctionId))
-        }
+      AuctionSystemLogger.log(SELLER + sellerId, EXHIBIT + auctions.size)
+      var index = from
+      for ((auction, title) <- auctions) {
+        auction ! createAuction(randomTime(), randomTime(), randomPrice(), index, title)
+        index += 1
       }
     }
   }

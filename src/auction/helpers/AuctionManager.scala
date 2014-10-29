@@ -54,6 +54,16 @@ class AuctionManager extends Actor with FSM[State, Data] {
     return range(random.nextInt(range length))
   }
 
+  private def prepareAuctionsForSeller(from: Int, auctions: List[ActorRef]): Map[ActorRef, String] = {
+    var result: Map[ActorRef, String] = Map()
+    var auctionId = from
+    for (auction <- auctions) {
+      result += auction -> SystemSettings.TITLES(auctionId)
+      auctionId += 1
+    }
+    return result
+  }
+
   /*
   * FSM 
   */
@@ -107,7 +117,7 @@ class AuctionManager extends Actor with FSM[State, Data] {
     }
     case Event(auctionIsOver(), AuctionSystemData(auctionsList, buyersList, sellersList)) => {
       auctionsFinished += 1
-      if(auctionsFinished == SystemSettings.NUMBER_OF_AUCTIONS){
+      if (auctionsFinished == SystemSettings.NUMBER_OF_AUCTIONS) {
         AuctionSystemLogger.logResults()
       }
       buyersList.foreach {
@@ -124,9 +134,18 @@ class AuctionManager extends Actor with FSM[State, Data] {
   onTransition {
     case AuctionSystemOff -> AuctionSystemOn => {
       for ((Uninitialized, AuctionSystemData(auctions, buyers, sellers)) <- Some(stateData, nextStateData)) {
+        val numberOfAuctionsPerSeller = SystemSettings.NUMBER_OF_AUCTIONS./(SystemSettings.NUMBER_OF_SELLERS)
+        val rest = SystemSettings.NUMBER_OF_AUCTIONS.%(SystemSettings.NUMBER_OF_SELLERS)
+        println("REST " + rest)
+        var from: Int = 0
+        var until: Int = numberOfAuctionsPerSeller
         sellers.zipWithIndex foreach {
-          case (seller, sellerId) => seller ! exhibitAuctions(auctions, sellerId)
+          case (seller, sellerId) =>
+            seller ! exhibitAuctions(prepareAuctionsForSeller(from, auctions.slice(from, until)), sellerId, from)
+            from += numberOfAuctionsPerSeller
+            until += numberOfAuctionsPerSeller
         }
+        sellers.last ! exhibitAuctions(prepareAuctionsForSeller(from, auctions.slice(from, auctions.length)), sellers.length.-(1), from)
       }
     }
   }

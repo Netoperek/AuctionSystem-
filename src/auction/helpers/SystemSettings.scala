@@ -11,9 +11,9 @@ object SystemSettings {
   val TIMERS_TOP_TIME: Int = 15
   val AUCTION_BOTTOM_PRICE: Int = 10
   val AUCTION_TOP_PRICE: Int = 100
-  val NUMBER_OF_AUCTIONS = 7;
+  val NUMBER_OF_AUCTIONS = 8;
   val NUMBER_OF_BUYERS = 3;
   val BUYER_BID_FREQUENCY = 1000; // ms
-  val NUMBER_OF_SELLERS = 1
+  val NUMBER_OF_SELLERS = 3
   val TITLES: Map[Int, String] = AuctionDataCreator.createAuctionsTitle;
 }
