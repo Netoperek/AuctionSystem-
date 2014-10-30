@@ -25,6 +25,7 @@ class BuyerActor extends Actor {
   private var buyerId = -1
   private var auctions: List[ActorRef] = Nil
   private var keyWord: String = "NONE"
+  private var myTopPrice: Int = 0
 
   private val auctionSearchActor = context.actorOf(Props[AuctionSearchActor], "auctionSearch")
 

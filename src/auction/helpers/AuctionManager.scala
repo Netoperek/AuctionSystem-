@@ -136,7 +136,6 @@ class AuctionManager extends Actor with FSM[State, Data] {
       for ((Uninitialized, AuctionSystemData(auctions, buyers, sellers)) <- Some(stateData, nextStateData)) {
         val numberOfAuctionsPerSeller = SystemSettings.NUMBER_OF_AUCTIONS./(SystemSettings.NUMBER_OF_SELLERS)
         val rest = SystemSettings.NUMBER_OF_AUCTIONS.%(SystemSettings.NUMBER_OF_SELLERS)
-        println("REST " + rest)
         var from: Int = 0
         var until: Int = numberOfAuctionsPerSeller
         sellers.zipWithIndex foreach {
