@@ -7,6 +7,7 @@ sealed trait AuctionMessage
 sealed trait TimerMessage
 sealed trait SellerMessage
 sealed trait SearchMessage
+sealed trait NotifyMessage
 
 case class startAuctionSystem() extends AuctionManagamentMessage
 case class closeAuctionSystem() extends AuctionManagamentMessage
@@ -23,10 +24,12 @@ case class auctionIsOver() extends AuctionMessage
 case class bidTimerExpired() extends TimerMessage
 case class deleteTimerExpired() extends TimerMessage
 
-case class keepBidding(times: Int)
+case class keepBidding(auctionToBid: Int)
 
 case class exhibitAuctions(auctions: Map[ActorRef, String], sellerId: Int, from: Int) extends SellerMessage
 case class findAuction(keyWord: String) extends SearchMessage
-case class sendFoundAuctions(auctions: List[ActorRef]) extends SearchMessage
-case class registerAuction(auctionId: Integer, auction: ActorRef) extends SearchMessage
+case class sendFoundAuctions(auctions: List[SystemSettings.AuctionPrice]) extends SearchMessage
+case class registerAuction(auctionId: Integer, auction: ActorRef, price: Int) extends SearchMessage
 case class auctionRegistered() extends SearchMessage
+
+case class yourOfferIsWorse(auction: ActorRef, auctionId: Int, currentPrice: Int, buyerId: Int) extends NotifyMessage

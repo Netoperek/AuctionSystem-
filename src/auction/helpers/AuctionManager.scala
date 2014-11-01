@@ -102,6 +102,10 @@ class AuctionManager extends Actor with FSM[State, Data] {
       buyersList(buyerId) ! youWon(auctionId)
       stay using AuctionSystemData(auctionsList, buyersList, sellersList)
     }
+    case Event(yourOfferIsWorse(auction, auctionId, currentPrice, buyerId), AuctionSystemData(auctionsList, buyersList, sellersList)) => {
+      buyersList(buyerId) ! yourOfferIsWorse(auction, auctionId, currentPrice, buyerId)
+      stay using AuctionSystemData(auctionsList, buyersList, sellersList)
+    }
     case Event(auctionRegistered(), AuctionSystemData(auctionsList, buyersList, sellersList)) => {
       AuctionSystemLogger.log(AUCTION_SYSTEM, NUMBER_OF_AUCTIONS_REGISTERED + auctionsRegistered)
       if (auctionsRegistered == SystemSettings.NUMBER_OF_AUCTIONS) {
@@ -136,7 +140,6 @@ class AuctionManager extends Actor with FSM[State, Data] {
       for ((Uninitialized, AuctionSystemData(auctions, buyers, sellers)) <- Some(stateData, nextStateData)) {
         val numberOfAuctionsPerSeller = SystemSettings.NUMBER_OF_AUCTIONS./(SystemSettings.NUMBER_OF_SELLERS)
         val rest = SystemSettings.NUMBER_OF_AUCTIONS.%(SystemSettings.NUMBER_OF_SELLERS)
-        println("REST " + rest)
         var from: Int = 0
         var until: Int = numberOfAuctionsPerSeller
         sellers.zipWithIndex foreach {

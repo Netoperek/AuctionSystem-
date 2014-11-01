@@ -14,17 +14,15 @@ import auction.helpers.SystemSettings
 
 class AuctionSearchActor extends Actor {
 
-  private var titles: Map[Int, String] = Map()
-  private var path: String = "akka://AuctionSearchSpec/user/$$a/auction1"
-  private var registerdAuctions: Map[Integer, ActorRef] = Map()
+  private var registerdAuctions: Map[Integer, SystemSettings.AuctionPrice] = Map()
   private val AUCTION_REGISTER: String = " Auction Registered "
   private val SEARCH_ACTOR: String = "Search Actor"
   private val SEARCHING: String = "Searching auctions with keyword "
 
-  def find(keyWord: String): List[ActorRef] = {
+  def find(keyWord: String): List[SystemSettings.AuctionPrice] = {
     AuctionSystemLogger.log(SEARCH_ACTOR, SEARCHING + keyWord)
     val pattern = keyWord.r
-    var result: List[ActorRef] = List()
+    var result: List[SystemSettings.AuctionPrice] = List()
     for ((auctionId, title) <- SystemSettings.TITLES) {
       val foundPattern = pattern.findFirstIn(title)
       if (foundPattern != None) {
@@ -39,9 +37,10 @@ class AuctionSearchActor extends Actor {
       val foundAuctions = find(keyWord)
       sender ! sendFoundAuctions(foundAuctions)
     }
-    case registerAuction(auctionId, auction) => {
+    case registerAuction(auctionId, auction, price) => {
       AuctionSystemLogger.log(SEARCH_ACTOR, AUCTION_REGISTER)
-      registerdAuctions += auctionId -> auction
+      val auctionPrice = SystemSettings.AuctionPrice(price, auction)
+      registerdAuctions += auctionId -> auctionPrice
     }
   }
 
