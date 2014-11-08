@@ -17,9 +17,9 @@ object SystemSettings {
   val AUCTION_TOP_PRICE: Int = 100
   val NUMBER_OF_AUCTIONS = 8;
   val NUMBER_OF_BUYERS = 15;
-  val BUYER_BID_FREQUENCY = 500; // ms
   val NUMBER_OF_SELLERS = 3
   val TITLES: Map[Int, String] = AuctionDataCreator.createAuctionsTitle;
+  val ACTOR_SELECTION_SEARCH = "/auctionSearch"
 
   case class AuctionPrice(price: Int, auction: ActorRef)
 }

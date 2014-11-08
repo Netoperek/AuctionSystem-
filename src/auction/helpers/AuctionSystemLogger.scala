@@ -11,14 +11,14 @@ object AuctionSystemLogger {
   def addAuctionsResults(buyer: String, auctionId: Int) = {
     resultsMap += auctionId -> buyer
   }
-
+  
   def logResults() = {
     println()
     println("--------------------------------------------------------")
     println("-----------------Auctions Result------------------------")
     println()
     for ((auctionId, buyer) <- resultsMap) {
-      println(buyer + " " + " [" + SystemSettings.TITLES(auctionId) + "] " + "(" + auctionId + ")")
+      println(buyer + " [" + SystemSettings.TITLES(auctionId) + "] " + "(" + auctionId + ")")
     }
     println()
     println("--------------------------------------------------------")

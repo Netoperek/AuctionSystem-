@@ -16,6 +16,7 @@ import auction.helpers.notifyWinner
 import auction.helpers.registerAuction
 import auction.helpers.auctionRegistered
 import auction.helpers.yourOfferIsWorse
+import auction.helpers.SystemSettings
 
 class AuctionActor extends Actor with FSM[state, data] {
 
@@ -82,7 +83,7 @@ class AuctionActor extends Actor with FSM[state, data] {
       this.auctionId = auctionId
       this.title = title
       AuctionSystemLogger.log(AUCTION + auctionId + title, CREATED_WITH_TIME + bidTimer + DELETE_TIME + deleteTimer + AND_PRICE + price + " " + title)
-      context.actorSelection("akka://default/user/auctionManager/auctionSearch") ! registerAuction(auctionId, self, price)
+      context.actorSelection(context.parent.path + SystemSettings.ACTOR_SELECTION_SEARCH) ! registerAuction(auctionId, self, price)
       context.parent ! auctionRegistered()
       goto(AuctionCreated) using AuctionData(NO_BEST_BID, NO_BUYER_ID)
     }

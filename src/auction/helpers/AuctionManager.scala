@@ -123,6 +123,7 @@ class AuctionManager extends Actor with FSM[State, Data] {
       auctionsFinished += 1
       if (auctionsFinished == SystemSettings.NUMBER_OF_AUCTIONS) {
         AuctionSystemLogger.logResults()
+        self ! closeAuctionSystem()
       }
       buyersList.foreach {
         x => x ! stopBidding(sender)

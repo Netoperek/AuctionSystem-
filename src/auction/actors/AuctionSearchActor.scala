@@ -23,12 +23,9 @@ class AuctionSearchActor extends Actor {
     AuctionSystemLogger.log(SEARCH_ACTOR, SEARCHING + keyWord)
     val pattern = keyWord.r
     var result: List[SystemSettings.AuctionPrice] = List()
-    for ((auctionId, title) <- SystemSettings.TITLES) {
-      val foundPattern = pattern.findFirstIn(title)
-      if (foundPattern != None) {
-        result = result.+:(registerdAuctions(auctionId))
-      }
-    }
+    SystemSettings.TITLES.
+      filter(x => x._2 contains keyWord).
+      foreach(x => result = result.+:(registerdAuctions(x._1)))
     return result
   }
 

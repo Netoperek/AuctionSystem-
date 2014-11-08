@@ -56,7 +56,7 @@ class BuyerActor extends Actor {
       this.buyerId = buyerId
       val keyWord = AuctionDataCreator.getRandomKeyWord()
       this.keyWord = keyWord
-      context.actorSelection("akka://default/user/auctionManager/auctionSearch") ! findAuction(keyWord)
+      context.actorSelection(context.parent.path + SystemSettings.ACTOR_SELECTION_SEARCH) ! findAuction(keyWord)
     }
     case stopBidding(auction: ActorRef) => {
       auctions = auctions.diff(List(auction))
@@ -72,7 +72,6 @@ class BuyerActor extends Actor {
     }
     case keepBidding(auctionToBid: Int) => {
       if (auctions.length != 0) {
-        Thread sleep SystemSettings.BUYER_BID_FREQUENCY
         val auction = auctions(auctionToBid)
         val price = randomPrice(auction.price)
         auctions(auctionToBid).auction ! bid(price, buyerId)
@@ -81,7 +80,6 @@ class BuyerActor extends Actor {
       }
     }
     case yourOfferIsWorse(auction, auctionId, currentPrice, buyerId) => {
-      Thread sleep SystemSettings.BUYER_BID_FREQUENCY
       val price = randomPrice(currentPrice)
       if (currentPrice < price) {
         AuctionSystemLogger.log(BUYER + buyerId + " " + keyWord, BEATEN_HIGHER + price + " > " + currentPrice)
