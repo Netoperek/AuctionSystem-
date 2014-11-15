@@ -1,0 +1,6 @@
+package auction.helpers
+
+object RegisteredAuctions {
+  private var registerdAuctions: Map[Integer, SystemSettings.AuctionPrice] = Map()
+
+}

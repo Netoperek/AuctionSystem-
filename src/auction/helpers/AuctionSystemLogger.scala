@@ -11,7 +11,7 @@ object AuctionSystemLogger {
   def addAuctionsResults(buyer: String, auctionId: Int) = {
     resultsMap += auctionId -> buyer
   }
-  
+
   def logResults() = {
     println()
     println("--------------------------------------------------------")

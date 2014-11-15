@@ -8,6 +8,7 @@ sealed trait TimerMessage
 sealed trait SellerMessage
 sealed trait SearchMessage
 sealed trait NotifyMessage
+sealed trait MasterSearchMessage
 
 case class startAuctionSystem() extends AuctionManagamentMessage
 case class closeAuctionSystem() extends AuctionManagamentMessage

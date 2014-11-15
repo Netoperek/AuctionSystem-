@@ -9,6 +9,7 @@ import auction.actors.AuctionActor
 import auction.actors.AuctionSearchActor
 import auction.actors.BuyerActor
 import auction.actors.SellerActor
+import auction.actors.MasterSearchActor
 
 class AuctionManager extends Actor with FSM[State, Data] {
 
@@ -31,6 +32,7 @@ class AuctionManager extends Actor with FSM[State, Data] {
   private var auctionsFinished = 0
 
   val auctionSearch = context.actorOf(Props[AuctionSearchActor], "auctionSearch")
+  val masterSearch = context.actorOf(Props[MasterSearchActor], "masterSearch")
 
   private def initAuctions(numberOfAuctions: Int): List[ActorRef] = {
     return (1 to numberOfAuctions).map(num => context.actorOf(Props[AuctionActor], "auction" + num)).toList
@@ -132,6 +134,7 @@ class AuctionManager extends Actor with FSM[State, Data] {
     }
     case Event(closeAuctionSystem(), AuctionSystemData(_, _, _)) => {
       AuctionSystemLogger.log(AUCTION_SYSTEM, SYSTEM_CLOSED)
+      TimeMeasure.writeResultsToFile();
       goto(AuctionSystemOff) using AuctionSystemData(Nil, Nil, Nil)
     }
   }
